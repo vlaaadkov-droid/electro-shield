@@ -1,0 +1,25 @@
+{
+  "name": "ЭлектроЩит PRO — Инженерный калькулятор и аудит щитов",
+  "short_name": "ЭлектроЩит",
+  "description": "Профессиональный инженерный электротехнический калькулятор и аудитор сборок щитов по ПУЭ для мобильных устройств в автономном режиме.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#121316",
+  "theme_color": "#D32F2F",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ЭлектроЩит PRO — Инженерный калькулятор и аудит щитов</title>
+
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="theme-color" content="#121316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ЭлектроЩит">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+
+  <style>
+    /* ==========================================================================
+       INDUSTRIAL DARK + RED ACCENT DESIGN SYSTEM
+       ========================================================================== */
+    :root {
+      --bg-main: #121316;
+      --card-bg: #1C1E24;
+      --card-border: #2E323C;
+      --accent: #D32F2F;
+      --accent-active: #B71C1C;
+      --accent-glow: rgba(211, 47, 47, 0.25);
+      
+      --text-main: #E4E6EB;
+      --text-muted: #9AA0A6;
+      --text-label: #B0B5BC;
+
+      /* Status traffic light */
+      --status-danger-bg: rgba(211, 47, 47, 0.15);
+      --status-danger-border: #D32F2F;
+      --status-danger-text: #FF5252;
+
+      --status-warn-bg: rgba(237, 108, 2, 0.15);
+      --status-warn-border: #ED6C02;
+      --status-warn-text: #FFB74D;
+
+      --status-safe-bg: rgba(46, 125, 50, 0.15);
+      --status-safe-border: #2E7D32;
+      --status-safe-text: #66BB6A;
+
+      --input-bg: #15171C;
+      --input-border: #353A45;
+      --input-focus: #D32F2F;
+      
+      --font-mono: "SF Mono", "JetBrains Mono", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Tabular numeric rendering */
+    .num, .mono, input[type="number"], select, .stat-value, .badge {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Container */
+    .app-container {
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      background-color: #17191F;
+      border-bottom: 2px solid var(--accent);
+      padding: 12px 16px 8px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    }
+
+    .brand-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--text-main);
+      text-transform: uppercase;
+    }
+
+    .brand-title .logo-icon {
+      width: 24px;
+      height: 24px;
+      fill: var(--accent);
+      display: inline-block;
+    }
+
+    .brand-badge {
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(211, 47, 47, 0.2);
+      border: 1px solid var(--accent);
+      color: #FF7B7B;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .offline-indicator {
+      font-size: 0.72rem;
+      color: var(--status-safe-text);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+    }
+
+    .offline-indicator::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--status-safe-text);
+      box-shadow: 0 0 6px var(--status-safe-text);
+    }
+
+    /* Tabs Bar */
+    .tabs-nav {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: #111216;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .tab-btn {
+      height: 44px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    .tab-btn:active {
+      background: var(--accent-active);
+    }
+
+    /* Content Area */
+    main {
+      flex: 1;
+      padding: 14px 12px 30px;
+    }
+
+    .tab-view {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .tab-view.active {
+      display: flex;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 6px;
+    }
+
+    .card-title .card-tag {
+      font-size: 0.7rem;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+
+    /* Form Fields and Controls (44px min touch target) */
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.82rem;
+      color: var(--text-label);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    label .hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .control-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      height: 46px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-main);
+      border-radius: 8px;
+      padding: 0 12px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    select {
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239AA0A6'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 20px;
+      padding-right: 32px;
+    }
+
+    input[type="number"]:focus, select:focus {
+      border-color: var(--input-focus);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    /* Segmented Button Controls (HMI Style) */
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+      min-height: 46px;
+    }
+
+    .segmented button {
+      min-height: 40px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s ease;
+      padding: 0 4px;
+    }
+
+    .segmented button.active {
+      background: var(--accent);
+      color: #FFFFFF;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    }
+
+    .segmented button:active {
+      background: var(--accent-active);
+    }
+
+    /* Checkbox & Switch row */
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      padding: 4px 0;
+      cursor: pointer;
+    }
+
+    .switch-label {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .switch-desc {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Toggle Switch */
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--input-border);
+      transition: .2s;
+      border-radius: 28px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+
+    .toggle input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    .toggle input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Grid 2-column on mobile */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* Real-time Calculation Panel */
+    .summary-box {
+      background: #15171D;
+      border: 1px solid #282C37;
+      border-radius: 8px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .summary-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .summary-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .summary-val small {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-left: 2px;
+    }
+
+    /* Recommended Equipment Cards */
+    .equip-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .equip-card {
+      background: #14161B;
+      border: 1px solid #292E3A;
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+
+    .equip-card.highlight {
+      border-left-color: #66BB6A;
+      background: rgba(46, 125, 50, 0.08);
+    }
+
+    .equip-title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .equip-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 2px;
+    }
+
+    .equip-spec {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Big Action Button (Export / Sync to Check) */
+    .btn-action {
+      min-height: 48px;
+      width: 100%;
+      background: var(--accent);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(211, 47, 47, 0.35);
+      transition: background 0.15s, transform 0.05s;
+    }
+
+    .btn-action:active {
+      background: var(--accent-active);
+      transform: scale(0.99);
+    }
+
+    .btn-secondary {
+      background: #242833;
+      border: 1px solid #373D4C;
+      color: var(--text-main);
+      box-shadow: none;
+      margin-top: 8px;
+    }
+
+    .btn-secondary:active {
+      background: #1D2028;
+    }
+
+    /* Audit Verdict Banners */
+    .verdict-banner {
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      border-width: 1.5px;
+      border-style: solid;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .verdict-banner.danger {
+      background: var(--status-danger-bg);
+      border-color: var(--status-danger-border);
+    }
+
+    .verdict-banner.warning {
+      background: var(--status-warn-bg);
+      border-color: var(--status-warn-border);
+    }
+
+    .verdict-banner.safe {
+      background: var(--status-safe-bg);
+      border-color: var(--status-safe-border);
+    }
+
+    .verdict-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    .verdict-content {
+      flex: 1;
+    }
+
+    .verdict-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .verdict-banner.danger .verdict-title { color: var(--status-danger-text); }
+    .verdict-banner.warning .verdict-title { color: var(--status-warn-text); }
+    .verdict-banner.safe .verdict-title { color: var(--status-safe-text); }
+
+    .verdict-desc {
+      font-size: 0.82rem;
+      color: #D3D7E0;
+      line-height: 1.4;
+    }
+
+    /* Audit Rules Checklist */
+    .audit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .audit-item {
+      background: #16181F;
+      border: 1px solid #2B303C;
+      border-radius: 8px;
+      padding: 12px;
+      border-left-width: 4px;
+      border-left-style: solid;
+    }
+
+    .audit-item.danger {
+      border-left-color: var(--status-danger-border);
+      background: rgba(211, 47, 47, 0.08);
+    }
+
+    .audit-item.warning {
+      border-left-color: var(--status-warn-border);
+      background: rgba(237, 108, 2, 0.08);
+    }
+
+    .audit-item.safe {
+      border-left-color: var(--status-safe-border);
+      background: rgba(46, 125, 50, 0.06);
+    }
+
+    .audit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .audit-name {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .audit-status-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .audit-item.danger .audit-status-tag {
+      background: rgba(211, 47, 47, 0.25);
+      color: #FF7B7B;
+    }
+
+    .audit-item.warning .audit-status-tag {
+      background: rgba(237, 108, 2, 0.25);
+      color: #FFB74D;
+    }
+
+    .audit-item.safe .audit-status-tag {
+      background: rgba(46, 125, 50, 0.25);
+      color: #81C784;
+    }
+
+    .audit-text {
+      font-size: 0.8rem;
+      line-height: 1.4;
+      color: #B4B9C4;
+    }
+
+    .audit-rule-code {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--accent);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* Collapsible helper */
+    .collapsible-header {
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .collapsible-content {
+      display: none;
+      padding-top: 10px;
+    }
+
+    .collapsible-content.open {
+      display: block;
+    }
+
+    /* Voltage drop progress bar */
+    .meter-container {
+      margin-top: 8px;
+    }
+    
+    .meter-bar {
+      height: 8px;
+      background: #252932;
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .meter-fill {
+      height: 100%;
+      background: var(--status-safe-text);
+      transition: width 0.2s, background-color 0.2s;
+    }
+
+    .meter-fill.warning {
+      background: var(--status-warn-text);
+    }
+
+    .meter-fill.danger {
+      background: var(--status-danger-text);
+    }
+
+    /* Small badge */
+    .badge {
+      display: inline-block;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      background: #272C38;
+      color: #BAC0CB;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 16px 12px;
+      font-size: 0.72rem;
+      color: #636976;
+      border-top: 1px solid #1F222B;
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- HEADER -->
+  <header>
+    <div class="brand-bar">
+      <div class="brand-title">
+        <svg class="logo-icon" viewBox="0 0 24 24">
+          <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-9-4zm-1 15h2v-2h-2v2zm1-13l3.5 6h-2.5v4h-2v-4H8.5L12 4z"/>
+        </svg>
+        ЭлектроЩит
+        <span class="brand-badge">PRO</span>
+      </div>
+      <div class="offline-indicator" id="offlineStatus">ОФЛАЙН ГОТОВ</div>
+    </div>
+
+    <!-- MAIN TABS (Подбор / Проверка) -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" id="tabBtnSelect" onclick="switchTab('select')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14h-2v-4H6v-2h4V7h2v4h4v2h-4v4z"/>
+        </svg>
+        1. Подбор
+      </button>
+      <button class="tab-btn" id="tabBtnAudit" onclick="switchTab('audit')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+        </svg>
+        2. Проверка
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ====================================================================
+         TAB 1: РЕЖИМ «ПОДБОР»
+         ==================================================================== -->
+    <section id="viewSelect" class="tab-view active">
+      
+      <!-- Сеть и нагрузка -->
+      <div class="card">
+        <div class="card-title">
+          <span>Параметры электросети</span>
+          <span class="card-tag">ШАГ 1</span>
+        </div>
+
+        <div class="form-group">
+          <label>Тип питающей сети</label>
+          <div class="segmented" id="selNetType">
+            <button type="button" class="active" onclick="setSelectNet('1p')">1Ф 220 В</button>
+            <button type="button" onclick="setSelectNet('3p')">3Ф 380 В</button>
+            <button type="button" onclick="setSelectNet('dc')">24 В DC</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Характер нагрузки</label>
+          <select id="selLoadType" onchange="calcSelection()">
+            <option value="sockets">Розеточные группы / Смешанная (cos φ 0.85)</option>
+            <option value="lighting">Освещение / Активная ТЭН (cos φ 0.95)</option>
+            <option value="control">Цепи управления / Автоматика (cos φ 0.95)</option>
+            <option value="motor">Асинхронный двигатель (cos φ 0.85, пуск 6x)</option>
+          </select>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Ввод нагрузки</label>
+            <div class="segmented" id="selInputMode">
+              <button type="button" class="active" onclick="setSelectInputMode('p')">кВт</button>
+              <button type="button" onclick="setSelectInputMode('w')">Вт</button>
+              <button type="button" onclick="setSelectInputMode('i')">Ток (А)</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label id="selLoadValueLabel">Мощность нагрузки</label>
+            <input type="number" id="selLoadValue" value="3.5" step="0.1" min="0" oninput="calcSelection()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Длина линии (м)<span class="hint">трасса</span></label>
+            <input type="number" id="selLength" value="25" min="1" max="1000" step="1" oninput="calcSelection()">
+          </div>
+          <div class="form-group">
+            <label>Материал кабеля</label>
+            <select id="selMaterial" onchange="calcSelection()">
+              <option value="cu">Медь (Cu)</option>
+              <option value="al">Алюминий (Al, ≥2.5)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Способ прокладки</label>
+          <div class="segmented" id="selMethod">
+            <button type="button" class="active" onclick="setSelectMethod('closed')">В трубе / коробе</button>
+            <button type="button" onclick="setSelectMethod('open')">Открыто</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Расчётные показатели линии -->
+      <div class="summary-box">
+        <div class="summary-item">
+          <span class="summary-label">Расчётный ток (Iр)</span>
+          <span class="summary-val" id="selCalcCurrent">0.00 <small>А</small></span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Падение напряж. (ΔU)</span>
+          <span class="summary-val" id="selCalcVoltDrop">0.00 <small>%</small></span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Пусковой ток (Iпуск)</span>
+          <span class="summary-val" id="selCalcInrush">0.00 <small>А</small></span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Запас по кабелю</span>
+          <span class="summary-val" id="selCalcCableReserve">0.0 <small>%</small></span>
+        </div>
+      </div>
+
+      <!-- Рекомендуемые компоненты -->
+      <div class="card">
+        <div class="card-title">
+          <span>Спецификация комплекта</span>
+          <span class="card-tag">РЕЗУЛЬТАТ</span>
+        </div>
+
+        <div class="equip-group">
+          <!-- Кабель -->
+          <div class="equip-card highlight">
+            <div class="equip-title">Рекомендуемый кабель (ПУЭ 1.3)</div>
+            <div class="equip-name" id="selResCable">ВВГнг(A)-LS 3×2.5 мм²</div>
+            <div class="equip-spec" id="selResCableSpec">Длит. допуст. ток: 21 А | Падение: 2.1% (Норма &lt; 5%)</div>
+          </div>
+
+          <!-- Автомат -->
+          <div class="equip-card">
+            <div class="equip-title">Автоматический выключатель</div>
+            <div class="equip-name" id="selResBreaker">ВА 16 А, кривая C</div>
+            <div class="equip-spec" id="selResBreakerSpec">Защищает кабель (16 А ≤ 21 А) и держит нагрузку (16 А ≥ 16.7 А)</div>
+          </div>
+
+          <!-- УЗО / АВДТ -->
+          <div class="equip-card" id="selResRcdCard">
+            <div class="equip-title">Дифференциальная защита (УЗО / АВДТ)</div>
+            <div class="equip-name" id="selResRcd">УЗО 25 А, 30 мА, Тип A</div>
+            <div class="equip-spec" id="selResRcdSpec">Номинал 25 А на ступень выше автомата 16 А для защиты от перегрузки</div>
+          </div>
+
+          <!-- Контактор и тепловое реле (при наличии) -->
+          <div class="equip-card" id="selResMotorCard" style="display:none;">
+            <div class="equip-title">Коммутация и термозащита двигателя</div>
+            <div class="equip-name" id="selResMotorCtrl">Контактор 25 А (AC-3) + РТТ 18.7 А</div>
+            <div class="equip-spec" id="selResMotorCtrlSpec">Категория AC-3 для прямого пуска, уставка реле = 100% рабочего тока</div>
+          </div>
+        </div>
+
+        <button type="button" class="btn-action" style="margin-top:14px;" onclick="transferSelectionToAudit()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+          </svg>
+          Перенести в аудит щита →
+        </button>
+      </div>
+
+    </section>
+
+
+    <!-- ====================================================================
+         TAB 2: РЕЖИМ «ПРОВЕРКА» (АУДИТ ЩИТА В РЕАЛЬНОМ ВРЕМЕНИ)
+         ==================================================================== -->
+    <section id="viewAudit" class="tab-view">
+      
+      <!-- СВОДНЫЙ ВЕРДИКТ АУДИТА -->
+      <div class="verdict-banner safe" id="auditVerdictBanner">
+        <div class="verdict-icon" id="auditVerdictIcon">✓</div>
+        <div class="verdict-content">
+          <div class="verdict-title" id="auditVerdictTitle">СБОРКА БЕЗОПАСНА</div>
+          <div class="verdict-desc" id="auditVerdictDesc">Все параметры соответствуют ПУЭ, риск перегрева и аварии отсутствует.</div>
+        </div>
+      </div>
+
+      <!-- Ввод параметров проверяемой сборки -->
+      <div class="card">
+        <div class="card-title">
+          <span>1. Параметры питаемой линии</span>
+          <span class="card-tag">ЛИНИЯ</span>
+        </div>
+
+        <div class="form-group">
+          <label>Сеть</label>
+          <div class="segmented" id="chkNetType">
+            <button type="button" class="active" onclick="setAuditNet('1p')">1Ф 220 В</button>
+            <button type="button" onclick="setAuditNet('3p')">3Ф 380 В</button>
+            <button type="button" onclick="setAuditNet('dc')">24 В DC</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Назначение нагрузки</label>
+          <select id="chkLoadType" onchange="runAudit()">
+            <option value="sockets">Розеточные группы / Смешанная</option>
+            <option value="lighting">Освещение / Активная (ТЭН)</option>
+            <option value="control">Цепи управления / Автоматика</option>
+            <option value="motor">Асинхронный двигатель</option>
+          </select>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Ввод нагрузки</label>
+            <div class="segmented" id="chkInputMode">
+              <button type="button" class="active" onclick="setAuditInputMode('p')">кВт</button>
+              <button type="button" onclick="setAuditInputMode('w')">Вт</button>
+              <button type="button" onclick="setAuditInputMode('i')">Амперы</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label id="chkLoadValueLabel">Мощность</label>
+            <input type="number" id="chkLoadValue" value="3.5" step="0.1" min="0" oninput="runAudit()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Длина кабеля (м)</label>
+            <input type="number" id="chkLength" value="25" min="1" max="1000" step="1" oninput="runAudit()">
+          </div>
+          <div class="form-group">
+            <label>Расчётный ток нагрузки</label>
+            <div style="height:46px; display:flex; align-items:center; padding: 0 12px; background:#121316; border:1px solid #2B303C; border-radius:8px; font-weight:700;" class="num" id="chkCalculatedCurrent">
+              18.72 А
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Параметры кабеля -->
+      <div class="card">
+        <div class="card-title">
+          <span>2. Проложенный кабель</span>
+          <span class="card-tag">ПРОВОДНИК</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Материал жилы</label>
+            <select id="chkMaterial" onchange="updateAuditSectionOptions(); runAudit();">
+              <option value="cu">Медь (Cu)</option>
+              <option value="al">Алюминий (Al)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Сечение (мм²)</label>
+            <select id="chkSection" onchange="runAudit()">
+              <!-- Generated dynamically -->
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Способ монтажа трассы</label>
+          <div class="segmented" id="chkMethod">
+            <button type="button" class="active" onclick="setAuditMethod('closed')">В трубе / коробе / жгуте</button>
+            <button type="button" onclick="setAuditMethod('open')">Открытая прокладка</button>
+          </div>
+        </div>
+
+        <!-- Voltage drop meter -->
+        <div class="meter-container">
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">
+            <span>Падение напряжения линии:</span>
+            <span id="chkDeltaUText" class="mono" style="font-weight:700; color:var(--text-main);">0.0%</span>
+          </div>
+          <div class="meter-bar">
+            <div class="meter-fill" id="chkDeltaUBar" style="width: 20%;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:#5D6370; margin-top:2px;" class="mono">
+            <span>0%</span>
+            <span>Норма ПУЭ ≤ 5%</span>
+            <span>10%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Аппараты защиты -->
+      <div class="card">
+        <div class="card-title">
+          <span>3. Аппараты защиты (АВ / УЗО / АВДТ)</span>
+          <span class="card-tag">ЗАЩИТА</span>
+        </div>
+
+        <div class="form-group">
+          <label>Конфигурация защиты линии</label>
+          <select id="chkProtectionType" onchange="toggleAuditRcdUI(); runAudit();">
+            <option value="breaker_rcd">Автоматический выключатель + УЗО (ВДТ)</option>
+            <option value="rcbo">Дифференциальный автомат (АВДТ)</option>
+            <option value="breaker_only">Только автоматический выключатель</option>
+          </select>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Номинал АВ / АВДТ</label>
+            <select id="chkBreakerCurrent" onchange="runAudit()">
+              <option value="1">1 А</option>
+              <option value="2">2 А</option>
+              <option value="3">3 А</option>
+              <option value="4">4 А</option>
+              <option value="6">6 А</option>
+              <option value="10">10 А</option>
+              <option value="13">13 А</option>
+              <option value="16" selected>16 А</option>
+              <option value="20">20 А</option>
+              <option value="25">25 А</option>
+              <option value="32">32 А</option>
+              <option value="40">40 А</option>
+              <option value="50">50 А</option>
+              <option value="63">63 А</option>
+              <option value="80">80 А</option>
+              <option value="100">100 А</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Кривая расцепителя</label>
+            <select id="chkBreakerCurve" onchange="runAudit()">
+              <option value="B">B (3-5 Iном, активная/линии)</option>
+              <option value="C" selected>C (5-10 Iном, стандарт)</option>
+              <option value="D">D (10-20 Iном, моторы)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- RCD Fields (Conditional) -->
+        <div id="chkRcdFieldsBlock">
+          <div class="grid-2">
+            <div class="form-group" id="chkRcdNominalGroup">
+              <label>Номинал УЗО (ВДТ)</label>
+              <select id="chkRcdNominal" onchange="runAudit()">
+                <option value="16">16 А</option>
+                <option value="25" selected>25 А</option>
+                <option value="32">32 А</option>
+                <option value="40">40 А</option>
+                <option value="63">63 А</option>
+                <option value="80">80 А</option>
+                <option value="100">100 А</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Ток утечки (ΔI)</label>
+              <select id="chkRcdCurrent" onchange="runAudit()">
+                <option value="10">10 мА (влажные зоны)</option>
+                <option value="30" selected>30 мА (защита человека)</option>
+                <option value="100">100 мА (пожарное)</option>
+                <option value="300">300 мА (пожарное)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Тип расцепителя УЗО</label>
+            <div class="segmented" id="chkRcdType">
+              <button type="button" class="active" onclick="setAuditRcdType('A')">Тип A (AC + пульс. DC)</button>
+              <button type="button" onclick="setAuditRcdType('AC')">Тип AC (только AC)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Опциональный блок: Коммутация и тепловое реле -->
+      <div class="card">
+        <div class="switch-row" onclick="toggleAuditMotorControl()">
+          <div>
+            <div class="switch-label">Блок коммутации нагрузки</div>
+            <div class="switch-desc">Контактор (AC-3) и тепловое реле перегрузки (РТТ)</div>
+          </div>
+          <label class="toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="chkMotorToggle" onchange="toggleAuditMotorControlUI(); runAudit();">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div id="chkMotorControlBlock" style="display:none; padding-top:12px; border-top:1px solid #2B303C; margin-top:8px;">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Контактор по AC-3 (А)</label>
+              <input type="number" id="chkContactorCurrent" value="25" min="1" step="1" oninput="runAudit()">
+            </div>
+            <div class="form-group">
+              <label>Уставка тепл. реле (А)</label>
+              <input type="number" id="chkThermalRelay" value="18.7" min="0.1" step="0.1" oninput="runAudit()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ДЕТАЛЬНЫЙ СПИСОК ПРОВЕРОК ПО 7 КРИТЕРИЯМ -->
+      <div class="card">
+        <div class="card-title">
+          <span>Протокол экспертизы сборки (ПУЭ 7)</span>
+          <span class="card-tag">7 КРИТЕРИЕВ</span>
+        </div>
+
+        <div class="audit-list" id="auditReportList">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer>
+    ЭЛЕКТРОЩИТ PRO • РАСЧЁТ И ЭКСПЕРТИЗА ПО ПУЭ 7 ИЗД. • ОФЛАЙН РЕЖИМ
+  </footer>
+</div>
+
+<script>
+  /* ==========================================================================
+     ENGINEERING CONSTANTS & PUE DATA TABLES
+     ========================================================================== */
+  // Resistivity (Ohm * mm² / m)
+  const RHO_CU = 0.0175;
+  const RHO_AL = 0.028;
+
+  // Maximum continuous currents for Copper (ПУЭ табл. 1.3.4 - 1.3.5)
+  const CABLE_TABLE_CU = {
+    0.5:  { closed: 6,   open: 11  },
+    0.75: { closed: 9,   open: 15  },
+    1.0:  { closed: 11,  open: 17  },
+    1.5:  { closed: 15,  open: 19  },
+    2.5:  { closed: 21,  open: 27  },
+    4.0:  { closed: 27,  open: 36  },
+    6.0:  { closed: 34,  open: 46  },
+    10.0: { closed: 50,  open: 65  },
+    16.0: { closed: 70,  open: 85  },
+    25.0: { closed: 85,  open: 115 },
+    35.0: { closed: 100, open: 135 },
+    50.0: { closed: 135, open: 175 }
+  };
+
+  // Maximum continuous currents for Aluminum (ПУЭ табл. 1.3.6 - 1.3.7)
+  // Under 2.5 mm² is strictly forbidden
+  const CABLE_TABLE_AL = {
+    2.5:  { closed: 16,  open: 21  },
+    4.0:  { closed: 21,  open: 28  },
+    6.0:  { closed: 26,  open: 36  },
+    10.0: { closed: 38,  open: 50  },
+    16.0: { closed: 55,  open: 65  },
+    25.0: { closed: 65,  open: 90  },
+    35.0: { closed: 75,  open: 105 },
+    50.0: { closed: 105, open: 135 }
+  };
+
+  const STANDARD_BREAKERS = [1, 2, 3, 4, 6, 10, 13, 16, 20, 25, 32, 40, 50, 63, 80, 100];
+  const STANDARD_RCDS = [16, 25, 32, 40, 63, 80, 100];
+
+  /* State objects */
+  const selectState = {
+    net: '1p',       // '1p', '3p', 'dc'
+    inputMode: 'p',  // 'p' (kW), 'w' (W), 'i' (A)
+    method: 'closed' // 'closed', 'open'
+  };
+
+  const auditState = {
+    net: '1p',
+    inputMode: 'p',
+    method: 'closed',
+    rcdType: 'A'
+  };
+
+  /* ==========================================================================
+     PWA SERVICE WORKER REGISTRATION
+     ========================================================================== */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => console.log('SW registered:', reg.scope))
+        .catch((err) => console.warn('SW registration failed:', err));
+    });
+  }
+
+  // Monitor online / offline state
+  function updateOnlineIndicator() {
+    const el = document.getElementById('offlineStatus');
+    if (!el) return;
+    if (navigator.onLine) {
+      el.textContent = 'ОФЛАЙН ГОТОВ';
+      el.style.color = 'var(--status-safe-text)';
+    } else {
+      el.textContent = 'АВТОНОМНО';
+      el.style.color = 'var(--status-warn-text)';
+    }
+  }
+  window.addEventListener('online', updateOnlineIndicator);
+  window.addEventListener('offline', updateOnlineIndicator);
+
+  /* ==========================================================================
+     TAB SWITCHING
+     ========================================================================== */
+  function switchTab(tab) {
+    const btnSelect = document.getElementById('tabBtnSelect');
+    const btnAudit = document.getElementById('tabBtnAudit');
+    const viewSelect = document.getElementById('viewSelect');
+    const viewAudit = document.getElementById('viewAudit');
+
+    if (tab === 'select') {
+      btnSelect.classList.add('active');
+      btnAudit.classList.remove('active');
+      viewSelect.classList.add('active');
+      viewAudit.classList.remove('active');
+      calcSelection();
+    } else {
+      btnAudit.classList.add('active');
+      btnSelect.classList.remove('active');
+      viewAudit.classList.add('active');
+      viewSelect.classList.remove('active');
+      runAudit();
+    }
+  }
+
+  /* ==========================================================================
+     ELECTRICAL FORMULAS
+     ========================================================================== */
+  function computeNominalCurrent(net, loadType, inputMode, rawValue) {
+    const val = parseFloat(rawValue) || 0;
+    if (val <= 0) return 0;
+
+    // Power in kW
+    let powerKw = 0;
+    if (inputMode === 'p') {
+      powerKw = val;
+    } else if (inputMode === 'w') {
+      powerKw = val / 1000.0;
+    } else if (inputMode === 'i') {
+      return val; // Directly current in Amperes
+    }
+
+    // Determine cos phi
+    let cosPhi = 0.95;
+    if (loadType === 'sockets' || loadType === 'motor') {
+      cosPhi = 0.85;
+    }
+
+    let current = 0;
+    if (net === 'dc') {
+      // 24V DC: I = (P * 1000) / 24
+      current = (powerKw * 1000.0) / 24.0;
+    } else if (net === '1p') {
+      // 1P 220V: I = (P * 1000) / (220 * cosPhi)
+      current = (powerKw * 1000.0) / (220.0 * cosPhi);
+    } else if (net === '3p') {
+      // 3P 380V: I = (P * 1000) / (380 * 1.732 * cosPhi)
+      current = (powerKw * 1000.0) / (380.0 * 1.73205 * cosPhi);
+    }
+    return current;
+  }
+
+  function computeVoltageDropPct(net, material, section, length, current) {
+    if (!section || section <= 0 || !length || length <= 0 || !current || current <= 0) return 0;
+    const rho = (material === 'cu') ? RHO_CU : RHO_AL;
+    let deltaU = 0;
+    if (net === 'dc') {
+      // DC 24V
+      deltaU = ((2.0 * length * current * rho) / (section * 24.0)) * 100.0;
+    } else if (net === '1p') {
+      // 1P 220V
+      deltaU = ((2.0 * length * current * rho) / (section * 220.0)) * 100.0;
+    } else if (net === '3p') {
+      // 3P 380V
+      deltaU = ((1.73205 * length * current * rho) / (section * 380.0)) * 100.0;
+    }
+    return deltaU;
+  }
+
+  /* ==========================================================================
+     TAB 1: РЕЖИМ «ПОДБОР» КОМПЛЕКТА
+     ========================================================================== */
+  function setSelectNet(net) {
+    selectState.net = net;
+    const btns = document.querySelectorAll('#selNetType button');
+    btns.forEach(b => b.classList.remove('active'));
+    if (net === '1p') btns[0].classList.add('active');
+    if (net === '3p') btns[1].classList.add('active');
+    if (net === 'dc') btns[2].classList.add('active');
+    calcSelection();
+  }
+
+  function setSelectInputMode(mode) {
+    selectState.inputMode = mode;
+    const btns = document.querySelectorAll('#selInputMode button');
+    btns.forEach(b => b.classList.remove('active'));
+    const inputVal = document.getElementById('selLoadValue');
+    const label = document.getElementById('selLoadValueLabel');
+
+    if (mode === 'p') {
+      btns[0].classList.add('active');
+      label.textContent = 'Мощность (кВт)';
+      if (inputVal.value > 100) inputVal.value = '3.5';
+    } else if (mode === 'w') {
+      btns[1].classList.add('active');
+      label.textContent = 'Мощность (Вт)';
+      if (inputVal.value < 50) inputVal.value = '3500';
+    } else {
+      btns[2].classList.add('active');
+      label.textContent = 'Рабочий ток (А)';
+      if (inputVal.value > 1000) inputVal.value = '16';
+    }
+    calcSelection();
+  }
+
+  function setSelectMethod(method) {
+    selectState.method = method;
+    const btns = document.querySelectorAll('#selMethod button');
+    btns.forEach(b => b.classList.remove('active'));
+    if (method === 'closed') btns[0].classList.add('active');
+    if (method === 'open') btns[1].classList.add('active');
+    calcSelection();
+  }
+
+  function calcSelection() {
+    const net = selectState.net;
+    const loadType = document.getElementById('selLoadType').value;
+    const inputMode = selectState.inputMode;
+    const loadVal = document.getElementById('selLoadValue').value;
+    const length = parseFloat(document.getElementById('selLength').value) || 20;
+    const material = document.getElementById('selMaterial').value;
+    const method = selectState.method;
+
+    const current = computeNominalCurrent(net, loadType, inputMode, loadVal);
+
+    // Inrush current
+    let inrush = current;
+    if (loadType === 'motor') {
+      inrush = current * 6.0;
+    } else if (loadType === 'sockets' || loadType === 'lighting') {
+      inrush = current * 1.5;
+    }
+
+    // 1. Minimum allowed cable cross-section by load type and material
+    let minSection = (material === 'cu') ? 1.5 : 2.5;
+    if (material === 'cu' && loadType === 'control') {
+      minSection = 0.5;
+    } else if (material === 'cu' && loadType === 'sockets') {
+      minSection = 1.5; // ПУЭ allows 1.5 min, standard socket line is 2.5
+    }
+
+    // Cable table lookup
+    const table = (material === 'cu') ? CABLE_TABLE_CU : CABLE_TABLE_AL;
+    const sections = Object.keys(table).map(Number).sort((a,b) => a - b);
+
+    // 2. Select cable cross-section: must satisfy continuous current AND voltage drop <= 5%
+    let selectedSection = sections[sections.length - 1];
+    let selectedCableImax = 0;
+
+    for (let s of sections) {
+      if (s < minSection) continue;
+      const iMax = table[s][method];
+      // Check thermal current
+      if (iMax >= current) {
+        // Check voltage drop
+        const deltaU = computeVoltageDropPct(net, material, s, length, current);
+        if (deltaU <= 5.0) {
+          selectedSection = s;
+          selectedCableImax = iMax;
+          break;
+        }
+      }
+    }
+
+    // If even largest has drop > 5%, pick largest
+    if (!selectedCableImax) {
+      selectedSection = sections[sections.length - 1];
+      selectedCableImax = table[selectedSection][method];
+    }
+
+    // 3. Select Breaker: Inom >= Iload and Inom <= I_cable_max
+    let chosenBreaker = 16;
+    let foundBreaker = false;
+    for (let b of STANDARD_BREAKERS) {
+      if (b >= current && b <= selectedCableImax) {
+        chosenBreaker = b;
+        foundBreaker = true;
+      }
+    }
+    // If current is very small (e.g. 0.4A), pick smallest breaker that satisfies >= current
+    if (!foundBreaker) {
+      for (let b of STANDARD_BREAKERS) {
+        if (b >= current) {
+          chosenBreaker = b;
+          break;
+        }
+      }
+    }
+
+    // If breaker > cable capacity, we must upscale cable section
+    while (chosenBreaker > selectedCableImax) {
+      const idx = sections.indexOf(selectedSection);
+      if (idx < sections.length - 1) {
+        selectedSection = sections[idx + 1];
+        selectedCableImax = table[selectedSection][method];
+      } else {
+        break;
+      }
+    }
+
+    // Breaker trip curve
+    let curve = 'C';
+    if (loadType === 'control' || (loadType === 'lighting' && current < 10)) {
+      curve = 'B';
+    } else if (loadType === 'motor') {
+      curve = 'D';
+    }
+
+    // 4. Select RCD / RCBO
+    let rcdNominal = 25;
+    for (let r of STANDARD_RCDS) {
+      if (r >= chosenBreaker) {
+        rcdNominal = r;
+        break;
+      }
+    }
+    // Preferred RCD rating is often 1 step above breaker for overload safety
+    const breakerIdx = STANDARD_RCDS.indexOf(chosenBreaker);
+    if (breakerIdx !== -1 && breakerIdx < STANDARD_RCDS.length - 1) {
+      rcdNominal = STANDARD_RCDS[breakerIdx + 1];
+    }
+
+    let rcdLeak = '30 мА';
+    if (loadType === 'control') rcdLeak = '30 мА';
+    let rcdTypeStr = (loadType === 'sockets' || loadType === 'control' || loadType === 'motor') ? 'Тип A' : 'Тип AC';
+
+    // 5. Motor Contactor and Thermal Relay
+    let contactorVal = 0;
+    let thermalVal = 0;
+    if (loadType === 'motor') {
+      // Contactor AC-3: pick >= current with safety margin
+      contactorVal = Math.max(9, Math.ceil(current * 1.15));
+      thermalVal = current;
+    }
+
+    const calcDeltaU = computeVoltageDropPct(net, material, selectedSection, length, current);
+    const cableReserve = selectedCableImax > 0 ? (((selectedCableImax - current) / selectedCableImax) * 100.0) : 0;
+
+    // UPDATE UI
+    document.getElementById('selCalcCurrent').innerHTML = current.toFixed(2) + ' <small>А</small>';
+    document.getElementById('selCalcVoltDrop').innerHTML = calcDeltaU.toFixed(2) + ' <small>%</small>';
+    document.getElementById('selCalcInrush').innerHTML = inrush.toFixed(1) + ' <small>А</small>';
+    document.getElementById('selCalcCableReserve').innerHTML = cableReserve.toFixed(0) + ' <small>%</small>';
+
+    const coreCount = (net === '3p') ? '5' : '3';
+    const matName = (material === 'cu') ? 'ВВГнг(A)-LS' : 'АВВГнг';
+    document.getElementById('selResCable').textContent = `${matName} ${coreCount}×${selectedSection} мм²`;
+    document.getElementById('selResCableSpec').textContent = 
+      `Длит. допуст. ток: ${selectedCableImax} А (${method === 'closed' ? 'в коробе' : 'открыто'}) | ΔU = ${calcDeltaU.toFixed(2)}% (ПУЭ ≤ 5%)`;
+
+    document.getElementById('selResBreaker').textContent = `Автомат ВА47 ${chosenBreaker} А, хар-ка ${curve}`;
+    document.getElementById('selResBreakerSpec').textContent = 
+      `Защита кабеля: Inom (${chosenBreaker} А) ≤ Iкаб (${selectedCableImax} А) | Нагрузка: Iнагр (${current.toFixed(1)} А) ≤ Inom`;
+
+    const rcdCard = document.getElementById('selResRcdCard');
+    if (net === 'dc') {
+      rcdCard.style.display = 'none';
+    } else {
+      rcdCard.style.display = 'block';
+      document.getElementById('selResRcd').textContent = `УЗО ${rcdNominal} А, ${rcdLeak}, ${rcdTypeStr} (или АВДТ ${chosenBreaker} А)`;
+      document.getElementById('selResRcdSpec').textContent = 
+        `Номинал ${rcdNominal} А защищён вышестоящим автоматом ${chosenBreaker} А | Утечка ${rcdLeak} для защиты человека`;
+    }
+
+    const motorCard = document.getElementById('selResMotorCard');
+    if (loadType === 'motor') {
+      motorCard.style.display = 'block';
+      document.getElementById('selResMotorCtrl').textContent = `Контактор ${contactorVal} А (кат. AC-3) + РТТ ${thermalVal.toFixed(1)} А`;
+      document.getElementById('selResMotorCtrlSpec').textContent = 
+        `Уставка теплового реле = 100% рабочего тока (${thermalVal.toFixed(1)} А), пускатель выдерживает прямой пуск`;
+    } else {
+      motorCard.style.display = 'none';
+    }
+  }
+
+  /* Transfer selected specs directly to Audit view */
+  function transferSelectionToAudit() {
+    setAuditNet(selectState.net);
+    document.getElementById('chkLoadType').value = document.getElementById('selLoadType').value;
+    setAuditInputMode(selectState.inputMode);
+    document.getElementById('chkLoadValue').value = document.getElementById('selLoadValue').value;
+    document.getElementById('chkLength').value = document.getElementById('selLength').value;
+
+    const mat = document.getElementById('selMaterial').value;
+    document.getElementById('chkMaterial').value = mat;
+    updateAuditSectionOptions();
+
+    // Extract calculated cable section from result
+    const cableText = document.getElementById('selResCable').textContent;
+    const match = cableText.match(/×([0-9.]+)\s*мм/);
+    if (match && match[1]) {
+      document.getElementById('chkSection').value = match[1];
+    }
+
+    setAuditMethod(selectState.method);
+
+    // Extract breaker
+    const breakerText = document.getElementById('selResBreaker').textContent;
+    const bMatch = breakerText.match(/([0-9]+)\s*А/);
+    if (bMatch && bMatch[1]) {
+      document.getElementById('chkBreakerCurrent').value = bMatch[1];
+    }
+    const cMatch = breakerText.match(/хар-ка\s*([BCD])/);
+    if (cMatch && cMatch[1]) {
+      document.getElementById('chkBreakerCurve').value = cMatch[1];
+    }
+
+    // Motor toggle if applicable
+    const isMotor = document.getElementById('selLoadType').value === 'motor';
+    const motorToggle = document.getElementById('chkMotorToggle');
+    motorToggle.checked = isMotor;
+    toggleAuditMotorControlUI();
+
+    if (isMotor) {
+      const cur = computeNominalCurrent(selectState.net, 'motor', selectState.inputMode, document.getElementById('selLoadValue').value);
+      document.getElementById('chkContactorCurrent').value = Math.max(9, Math.ceil(cur * 1.15));
+      document.getElementById('chkThermalRelay').value = cur.toFixed(1);
+    }
+
+    switchTab('audit');
+  }
+
+  /* ==========================================================================
+     TAB 2: РЕЖИМ «ПРОВЕРКА» (АУДИТ ЩИТА В РЕАЛЬНОМ ВРЕМЕНИ)
+     ========================================================================== */
+  function setAuditNet(net) {
+    auditState.net = net;
+    const btns = document.querySelectorAll('#chkNetType button');
+    btns.forEach(b => b.classList.remove('active'));
+    if (net === '1p') btns[0].classList.add('active');
+    if (net === '3p') btns[1].classList.add('active');
+    if (net === 'dc') btns[2].classList.add('active');
+    runAudit();
+  }
+
+  function setAuditInputMode(mode) {
+    auditState.inputMode = mode;
+    const btns = document.querySelectorAll('#chkInputMode button');
+    btns.forEach(b => b.classList.remove('active'));
+    const inputVal = document.getElementById('chkLoadValue');
+    const label = document.getElementById('chkLoadValueLabel');
+
+    if (mode === 'p') {
+      btns[0].classList.add('active');
+      label.textContent = 'Мощность (кВт)';
+      if (inputVal.value > 100) inputVal.value = '3.5';
+    } else if (mode === 'w') {
+      btns[1].classList.add('active');
+      label.textContent = 'Мощность (Вт)';
+      if (inputVal.value < 50) inputVal.value = '3500';
+    } else {
+      btns[2].classList.add('active');
+      label.textContent = 'Рабочий ток (А)';
+      if (inputVal.value > 1000) inputVal.value = '16';
+    }
+    runAudit();
+  }
+
+  function setAuditMethod(method) {
+    auditState.method = method;
+    const btns = document.querySelectorAll('#chkMethod button');
+    btns.forEach(b => b.classList.remove('active'));
+    if (method === 'closed') btns[0].classList.add('active');
+    if (method === 'open') btns[1].classList.add('active');
+    runAudit();
+  }
+
+  function setAuditRcdType(type) {
+    auditState.rcdType = type;
+    const btns = document.querySelectorAll('#chkRcdType button');
+    btns.forEach(b => b.classList.remove('active'));
+    if (type === 'A') btns[0].classList.add('active');
+    if (type === 'AC') btns[1].classList.add('active');
+    runAudit();
+  }
+
+  function updateAuditSectionOptions() {
+    const mat = document.getElementById('chkMaterial').value;
+    const select = document.getElementById('chkSection');
+    const currentVal = parseFloat(select.value);
+
+    select.innerHTML = '';
+    const table = (mat === 'cu') ? CABLE_TABLE_CU : CABLE_TABLE_AL;
+    const sections = Object.keys(table).map(Number).sort((a,b) => a - b);
+
+    sections.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = `${s} мм²`;
+      select.appendChild(opt);
+    });
+
+    if (sections.includes(currentVal)) {
+      select.value = currentVal;
+    } else {
+      select.value = (mat === 'cu') ? '2.5' : '4';
+    }
+  }
+
+  function toggleAuditRcdUI() {
+    const pType = document.getElementById('chkProtectionType').value;
+    const block = document.getElementById('chkRcdFieldsBlock');
+    const rcdNominalGroup = document.getElementById('chkRcdNominalGroup');
+
+    if (pType === 'breaker_only') {
+      block.style.display = 'none';
+    } else if (pType === 'rcbo') {
+      block.style.display = 'block';
+      rcdNominalGroup.style.display = 'none'; // RCBO has breaker rating as its rating
+    } else {
+      block.style.display = 'block';
+      rcdNominalGroup.style.display = 'block';
+    }
+  }
+
+  function toggleAuditMotorControl() {
+    const toggle = document.getElementById('chkMotorToggle');
+    toggle.checked = !toggle.checked;
+    toggleAuditMotorControlUI();
+    runAudit();
+  }
+
+  function toggleAuditMotorControlUI() {
+    const toggle = document.getElementById('chkMotorToggle');
+    const block = document.getElementById('chkMotorControlBlock');
+    block.style.display = toggle.checked ? 'block' : 'none';
+  }
+
+  /* ==========================================================================
+     CORE AUDIT ENGINE: 7 PUE COMPLIANCE CHECKS
+     ========================================================================== */
+  function runAudit() {
+    const net = auditState.net;
+    const loadType = document.getElementById('chkLoadType').value;
+    const inputMode = auditState.inputMode;
+    const loadVal = document.getElementById('chkLoadValue').value;
+    const length = parseFloat(document.getElementById('chkLength').value) || 20;
+
+    const material = document.getElementById('chkMaterial').value;
+    const section = parseFloat(document.getElementById('chkSection').value) || 2.5;
+    const method = auditState.method;
+
+    const protectionType = document.getElementById('chkProtectionType').value;
+    const breakerNominal = parseFloat(document.getElementById('chkBreakerCurrent').value) || 16;
+    const breakerCurve = document.getElementById('chkBreakerCurve').value;
+
+    let rcdNominal = parseFloat(document.getElementById('chkRcdNominal').value) || 25;
+    if (protectionType === 'rcbo') {
+      rcdNominal = breakerNominal; // In RCBO, trip unit rating = breaker rating
+    }
+    const rcdLeakCurrent = parseFloat(document.getElementById('chkRcdCurrent').value) || 30;
+    const rcdType = auditState.rcdType;
+
+    const hasMotorBlock = document.getElementById('chkMotorToggle').checked;
+    const contactorNominal = parseFloat(document.getElementById('chkContactorCurrent').value) || 0;
+    const thermalRelayNominal = parseFloat(document.getElementById('chkThermalRelay').value) || 0;
+
+    // Calculated current
+    const current = computeNominalCurrent(net, loadType, inputMode, loadVal);
+    document.getElementById('chkCalculatedCurrent').textContent = current.toFixed(2) + ' А';
+
+    // Cable table lookup
+    const table = (material === 'cu') ? CABLE_TABLE_CU : CABLE_TABLE_AL;
+    let cableImax = 0;
+    if (table[section]) {
+      cableImax = table[section][method];
+    }
+
+    // Voltage Drop
+    const deltaU = computeVoltageDropPct(net, material, section, length, current);
+    const deltaUEl = document.getElementById('chkDeltaUText');
+    const deltaUBar = document.getElementById('chkDeltaUBar');
+    deltaUEl.textContent = deltaU.toFixed(2) + '%';
+    const fillPercent = Math.min(100, Math.max(5, deltaU * 10));
+    deltaUBar.style.width = fillPercent + '%';
+
+    if (deltaU <= 5.0) {
+      deltaUBar.className = 'meter-fill';
+      deltaUEl.style.color = 'var(--status-safe-text)';
+    } else if (deltaU <= 7.0) {
+      deltaUBar.className = 'meter-fill warning';
+      deltaUEl.style.color = 'var(--status-warn-text)';
+    } else {
+      deltaUBar.className = 'meter-fill danger';
+      deltaUEl.style.color = 'var(--status-danger-text)';
+    }
+
+    // --- EXECUTE 7 CRITERIA ---
+    const checks = [];
+
+    // CRITERION 1: Сечение кабеля и тип нагрузки
+    let crit1 = { name: '1. Сечение кабеля и назначение цепи', status: 'safe', text: '', code: 'ПУЭ 7.1.34, 1.3' };
+    if (material === 'al' && section < 2.5) {
+      crit1.status = 'danger';
+      crit1.text = 'Алюминиевые жилы сечением менее 2.5 мм² категорически запрещены ПУЭ в электроустановках зданий.';
+    } else if (material === 'cu' && (section < 1.5) && (loadType === 'sockets' || loadType === 'motor' || loadType === 'lighting')) {
+      crit1.status = 'danger';
+      crit1.text = `Нарушение ПУЭ: минимальное допустимое сечение для силовых, осветительных и розеточных линий — 1.5 мм² (выбрано ${section} мм²).`;
+    } else if (loadType === 'control') {
+      crit1.status = 'safe';
+      crit1.text = `Сечение ${section} мм² удовлетворяет требованиям вторичной коммутации и цепей автоматики.`;
+    } else {
+      crit1.status = 'safe';
+      crit1.text = `Сечение ${section} мм² (${material === 'cu' ? 'медь' : 'алюминий'}) полностью допустимо для категории «${getLoadTypeName(loadType)}».`;
+    }
+    checks.push(crit1);
+
+    // CRITERION 2: Защита кабеля автоматическим выключателем (Iном_авт <= Iдоп_каб)
+    let crit2 = { name: '2. Защита кабеля от перегрузки', status: 'safe', text: '', code: 'ПУЭ 3.1.4, ГОСТ Р 50345' };
+    if (cableImax <= 0) {
+      crit2.status = 'danger';
+      crit2.text = 'Недопустимое сочетание сечения кабеля и материала.';
+    } else if (breakerNominal > cableImax) {
+      crit2.status = 'danger';
+      crit2.text = `Риск пожара: номинал автомата (${breakerNominal} А) превышает допустимый длительный ток кабеля (${cableImax} А). Кабель перегреется и воспламенится до того, как сработает тепловой расцепитель!`;
+    } else {
+      crit2.status = 'safe';
+      crit2.text = `Автомат ${breakerNominal} А надёжно защищает проводник: Iном (${breakerNominal} А) ≤ Iдоп (${cableImax} А).`;
+    }
+    checks.push(crit2);
+
+    // CRITERION 3: Соответствие нагрузки и автомата (Iрасч <= Iном_авт)
+    let crit3 = { name: '3. Соответствие автомата нагрузке', status: 'safe', text: '', code: 'ПУЭ 3.1.3' };
+    if (current > breakerNominal) {
+      crit3.status = 'danger';
+      crit3.text = `Автомат будет ложно выбивать при нормальной работе: рабочий ток линии (${current.toFixed(2)} А) больше номинала выключателя (${breakerNominal} А).`;
+    } else {
+      const margin = (((breakerNominal - current) / breakerNominal) * 100).toFixed(0);
+      crit3.status = 'safe';
+      crit3.text = `Номинал автомата достаточен: рабочий ток ${current.toFixed(2)} А ≤ ${breakerNominal} А (запас по току: ${margin}%).`;
+    }
+    checks.push(crit3);
+
+    // CRITERION 4: Кривая расцепителя автомата
+    let crit4 = { name: '4. Время-токовая характеристика (Кривая)', status: 'safe', text: '', code: 'ГОСТ IEC 60898-1' };
+    if (loadType === 'motor') {
+      if (breakerCurve === 'B') {
+        crit4.status = 'danger';
+        crit4.text = 'Критично: кривая B (отсечка 3-5 Iном) гарантированно приведёт к отключению автомата при прямом пуске асинхронного электродвигателя.';
+      } else if (breakerCurve === 'C') {
+        // If margin is under 1.5x nominal
+        if (breakerNominal < current * 1.5) {
+          crit4.status = 'warning';
+          crit4.text = 'Высокий риск ложного срабатывания от пускового тока двигателя (пуск 5-7 Iр). Рекомендуется кривая D или специализированный автомат защиты двигателя (мотор-автомат).';
+        } else {
+          crit4.status = 'safe';
+          crit4.text = `Кривая C допустима при запасе номинала автомата (${breakerNominal} А при токе ${current.toFixed(1)} А).`;
+        }
+      } else {
+        crit4.status = 'safe';
+        crit4.text = 'Кривая D (отсечка 10-20 Iном) идеальна для пусковых токов электродвигателей.';
+      }
+    } else {
+      if (breakerCurve === 'D') {
+        crit4.status = 'warning';
+        crit4.text = 'Кривая D не рекомендуется для бытовых, розеточных и кабельных сетей общего назначения: ток короткого замыкания в конце длинной линии может оказаться недостаточным для мгновенного срабатывания электромагнитного расцепителя.';
+      } else {
+        crit4.status = 'safe';
+        crit4.text = `Кривая ${breakerCurve} оптимальна для выбранного типа потребителей.`;
+      }
+    }
+    checks.push(crit4);
+
+    // CRITERION 5: Координация УЗО и автомата
+    let crit5 = { name: '5. Дифференциальная защита (УЗО/АВДТ)', status: 'safe', text: '', code: 'ПУЭ 7.1.76, 7.1.79' };
+    if (net === 'dc') {
+      crit5.status = 'safe';
+      crit5.text = 'Для сети постоянного тока 24 В DC стандартные УЗО переменного тока не применяются.';
+    } else if (protectionType === 'breaker_only') {
+      if (loadType === 'sockets') {
+        crit5.status = 'danger';
+        crit5.text = 'Грубое нарушение ПУЭ 7.1.79: розеточные группы общего назначения обязательно должны быть защищены УЗО или АВДТ с током утечки не более 30 мА.';
+      } else {
+        crit5.status = 'warning';
+        crit5.text = 'Линия выполнена без УЗО. Допускается только для стационарного оборудования или освещения вне влажных зон при надежном заземлении.';
+      }
+    } else {
+      // Breaker + RCD or RCBO
+      let errs = [];
+      let warns = [];
+
+      if (protectionType === 'breaker_rcd') {
+        if (rcdNominal < breakerNominal) {
+          errs.push(`УЗО сгорит при перегрузке: номинал УЗО (${rcdNominal} А) меньше номинала защищающего автомата (${breakerNominal} А). По ПУЭ номинал УЗО должен быть равен или на ступень выше автомата.`);
+        }
+      }
+
+      if (loadType === 'sockets' && (rcdLeakCurrent === 100 || rcdLeakCurrent === 300)) {
+        errs.push(`Опасно для жизни: ток утечки ${rcdLeakCurrent} мА является противопожарным и не защищает человека от фибрилляции сердца при прямом прикосновении. Требуется ток утечки не более 30 мА.`);
+      }
+
+      if ((loadType === 'sockets' || loadType === 'control') && rcdType === 'AC') {
+        warns.push('Для современной бытовой электроники, компьютеров, стиральных машин и импульсных БП рекомендуется УЗО типа A (фиксирует постоянную пульсирующую утечку). Тип AC реагирует только на чистый синус.');
+      }
+
+      if (errs.length > 0) {
+        crit5.status = 'danger';
+        crit5.text = errs.join(' ');
+      } else if (warns.length > 0) {
+        crit5.status = 'warning';
+        crit5.text = warns.join(' ');
+      } else {
+        crit5.status = 'safe';
+        crit5.text = `Координация защиты соблюдена: ${protectionType === 'rcbo' ? 'АВДТ' : 'УЗО ' + rcdNominal + ' А'}, утечка ${rcdLeakCurrent} мА, класс ${rcdType}.`;
+      }
+    }
+    checks.push(crit5);
+
+    // CRITERION 6: Падение напряжения на линии
+    let crit6 = { name: '6. Падение напряжения в линии (ΔU)', status: 'safe', text: '', code: 'ПУЭ 1.2.22, ГОСТ 29322' };
+    if (deltaU > 5.0) {
+      crit6.status = 'warning';
+      crit6.text = `Просадка напряжения на конце линии составляет ${deltaU.toFixed(2)}% (норма ПУЭ ≤ 5%). Увеличьте сечение кабеля для исключения нестабильной работы оборудования.`;
+    } else {
+      crit6.status = 'safe';
+      crit6.text = `Падение напряжения в пределах нормы: ${deltaU.toFixed(2)}% ≤ 5.0% (допустимо по ПУЭ).`;
+    }
+    checks.push(crit6);
+
+    // CRITERION 7: Контактор и тепловое реле
+    let crit7 = { name: '7. Пусковая аппаратура и термозащита', status: 'safe', text: '', code: 'ГОСТ IEC 60947-4-1' };
+    if (!hasMotorBlock) {
+      crit7.status = 'safe';
+      crit7.text = 'Блок коммутации пускателя/РТТ отключен (прямое подключение или стационарная нагрузка).';
+    } else {
+      let mErrs = [];
+      let mWarns = [];
+
+      if (contactorNominal < current) {
+        mErrs.push(`Контакты пускателя сгорят / приварятся: номинал контактора по AC-3 (${contactorNominal} А) ниже рабочего тока нагрузки (${current.toFixed(2)} А).`);
+      }
+
+      const diff = Math.abs(thermalRelayNominal - current);
+      const diffPct = current > 0 ? (diff / current) * 100 : 0;
+      if (diffPct > 10.0) {
+        mWarns.push(`Некорректная уставка теплового реле: ${thermalRelayNominal} А отклоняется от номинального тока нагрузки (${current.toFixed(2)} А) на ${diffPct.toFixed(0)}%. Выставьте уставку 1.0×Iн.`);
+      }
+
+      if (mErrs.length > 0) {
+        crit7.status = 'danger';
+        crit7.text = mErrs.join(' ');
+      } else if (mWarns.length > 0) {
+        crit7.status = 'warning';
+        crit7.text = mWarns.join(' ');
+      } else {
+        crit7.status = 'safe';
+        crit7.text = `Контактор ${contactorNominal} А (кат. AC-3) и уставка РТТ ${thermalRelayNominal} А согласованы с током нагрузки ${current.toFixed(2)} А.`;
+      }
+    }
+    checks.push(crit7);
+
+    // RENDER AUDIT SUMMARY & CHECKLIST
+    renderAuditSummary(checks);
+  }
+
+  function renderAuditSummary(checks) {
+    const list = document.getElementById('auditReportList');
+    list.innerHTML = '';
+
+    let hasDanger = false;
+    let hasWarn = false;
+
+    checks.forEach(c => {
+      if (c.status === 'danger') hasDanger = true;
+      if (c.status === 'warning') hasWarn = true;
+
+      const item = document.createElement('div');
+      item.className = `audit-item ${c.status}`;
+
+      let tagLabel = 'НОРМА';
+      if (c.status === 'danger') tagLabel = 'ОШИБКА';
+      if (c.status === 'warning') tagLabel = 'ВНИМАНИЕ';
+
+      item.innerHTML = `
+        <div class="audit-header">
+          <span class="audit-name">${c.name}</span>
+          <span class="audit-status-tag">${tagLabel}</span>
+        </div>
+        <div class="audit-text">${c.text}</div>
+        <span class="audit-rule-code">${c.code}</span>
+      `;
+      list.appendChild(item);
+    });
+
+    // Update Verdict Banner
+    const banner = document.getElementById('auditVerdictBanner');
+    const icon = document.getElementById('auditVerdictIcon');
+    const title = document.getElementById('auditVerdictTitle');
+    const desc = document.getElementById('auditVerdictDesc');
+
+    if (hasDanger) {
+      banner.className = 'verdict-banner danger';
+      icon.textContent = '✕';
+      title.textContent = 'ОШИБКА: СБОРКА ОПАСНА';
+      desc.textContent = 'Обнаружены критические несоответствия ПУЭ. Эксплуатация щита может привести к перегреву кабеля, возгоранию или поражению током!';
+    } else if (hasWarn) {
+      banner.className = 'verdict-banner warning';
+      icon.textContent = '⚠';
+      title.textContent = 'ТРЕБУЕТСЯ ВНИМАНИЕ';
+      desc.textContent = 'Критических нарушений безопасности нет, но присутствуют эксплуатационные замечания (просадка напряжения или риск ложного срабатывания).';
+    } else {
+      banner.className = 'verdict-banner safe';
+      icon.textContent = '✓';
+      title.textContent = 'СБОРКА КОРРЕКТНА И БЕЗОПАСНА';
+      desc.textContent = 'Все компоненты щита согласованы, защита кабеля и человека выполнена в строгом соответствии с ПУЭ 7 издания.';
+    }
+  }
+
+  function getLoadTypeName(type) {
+    switch (type) {
+      case 'sockets': return 'Розеточные группы / Смешанная';
+      case 'lighting': return 'Освещение / Активная (ТЭН)';
+      case 'control': return 'Цепи управления / Автоматика';
+      case 'motor': return 'Асинхронный двигатель';
+      default: return 'Нагрузка';
+    }
+  }
+
+  // Initialize on page load
+  window.addEventListener('DOMContentLoaded', () => {
+    updateAuditSectionOptions();
+    calcSelection();
+    runAudit();
+    updateOnlineIndicator();
+  });
+</script>
+</body>
+</html>
